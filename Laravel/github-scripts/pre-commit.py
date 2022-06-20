@@ -1,4 +1,4 @@
-#!C:\Users\101946\AppData\Local\Programs\Python\Python310\python.exe
+#!C:\Users\Me\AppData\Local\Programs\Python\Python310\python.exe
 
 import sys
 import subprocess
