@@ -1,2 +1,2 @@
-# mix-of-algorithms
-Some kind of backup
+# mix-of-codes
+Some kind of backup, or whatever
