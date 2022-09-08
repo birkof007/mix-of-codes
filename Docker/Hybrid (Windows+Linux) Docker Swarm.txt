@@ -1,0 +1,89 @@
+Source: https://gist.github.com/roommen/1cb4e04ab42721b9c61f9f154196744b
+
+**********************
+*** Pre-requisites ***
+**********************
+1. Set up Windows 2016 password:
+gcloud beta compute --project <project_id> reset-windows-password <instance_name> --zone <zone_name>
+ip_address: <ip_address>
+password: <defult_password_generated>
+username: <username>
+
+3. Installing Docker:
+https://store.docker.com/editions/enterprise/docker-ee-server-windows
+https://store.docker.com/editions/community/docker-ce-server-centos
+https://store.docker.com/editions/community/docker-ce-server-ubuntu
+
+3. Setup firewall rules in GCP (VPC Network --> Firewall Rules):
+TCP port 2376 for secure Docker client communication.
+TCP port 2377 for communication between the nodes of a Docker Swarm or cluster (only on manager nodes)
+TCP and UDP port 7946 for communication among nodes.
+UDP port 4789 for overlay network traffic.
+
+
+****************
+*** Commands ***
+****************
+1. Setting up manager:
+docker swarm init --advertise-addr 10.140.0.3 --listen-addr 10.140.0.3:2377
+
+2. Joining the workers:
+docker swarm join --token <token_id> 10.140.0.3:2377
+
+3. Check for status:
+docker node ls
+
+4. Apply labels for easy id/deployment:
+docker node update --label-add os=windows manager
+docker node update --label-add os=windows worker1
+docker node update --label-add os=linux worker2
+
+5. Verify the labels:
+docker node inspect manager | findstr 'os'
+docker node inspect worker3 | findstr 'os'
+
+6. Check the N/W types:
+docker network ls
+
+7. Create an application overlay N/W:
+docker network create -d overlay meetupnet
+
+8. Create a "db" service for Windows nodes:
+docker service create --name db --network meetupnet --constraint 'node.labels.os==windows' --endpoint-mode dnsrr redis:3.2.100-nanoserver
+
+9. Create a "web" service for Linux nodes:
+docker service create --name web --network meetupnet --constraint 'node.labels.os==linux' --publish 80:80 radumatei/python-web
+
+10. Scaling the "db" service:
+docker service scale db=3
+docker service ls
+docker service ps db
+
+11. Add a Linux worker node and promote to manager:
+docker swarm join --token <token_id> 10.140.0.3:2377
+docker node update --label-add os=linux worker3
+docker node promote worker3
+
+12. Scaling the "web" Service:
+docker service scale web=3
+docker service ls
+docker service ps web
+
+13. Configure nginx.conf with IP addresses of Docker host machines
+
+14. Build custom Docker images:
+cat Dockerfile
+docker build . -t nginx:meetupdemo
+docker images
+
+15. Run the new nginx image:
+docker run -p 80:80 -d nginx:meetupdemo
+docker ps
+
+
+***************************
+*** External References ***
+***************************
+1. Up-to-date info/changes of Docker on Windows - https://docs.microsoft.com/en-us/virtualization/windowscontainers/manage-containers/swarm-mode
+2. Use Docker Swarm to run a Windows+Linux containerized application - https://www.youtube.com/watch?v=ZfMV5JmkWCY
+3. Hybrid Docker Swarm cluster with multi-os deployment - http://collabnix.com/building-hybrid-docker-swarm-mode-cluster-on-google-cloud-platform/
