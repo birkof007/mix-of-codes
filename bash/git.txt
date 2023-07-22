@@ -1,2 +1,0 @@
-#Vypise pouze zmeny s radky zacinajici na + a - s mezerou nebo tabulátorem.
-git diff --no-color meta_mod_1 meta_mod_4 meta_changes.json | grep -E '^\+[[:space:]]|^\-[[:space:]]' > ../diff.txt
